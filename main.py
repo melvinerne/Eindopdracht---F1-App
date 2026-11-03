@@ -29,7 +29,10 @@ def get_race_data(chosen_year):
 
     if response.ok:
         data = response.json()
-        race_data_dict = {session["session_key"]: session["country_name"] for session in data}
+        race_data_dict = {session["session_key"]: {
+            "country_name": session["country_name"], "location": session['location']}
+            for session in data}
+
         return race_data_dict
     else:
         print(f"Fout: {response.status_code} - {response.text}")
