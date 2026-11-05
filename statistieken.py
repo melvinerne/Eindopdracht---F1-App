@@ -87,10 +87,35 @@ def get_fastest_lap(driver, driver_full_name, race_data, active_drivers):
 
         fastest_lap = min(fastest_lap_per_session.values())
         fastest_session_key = min(fastest_lap_per_session, key=fastest_lap_per_session.get)
+
         country = race_data[fastest_session_key]["country_name"]
         circuit = race_data[fastest_session_key]["location"]
+
         print(Panel.fit(f"De snelste ronde van {driver_full_name} is {fastest_lap} in {country} - {circuit}"))
 
     else:
         print(f"Fout: {response.status_code} - {response.text}")
         return None
+
+
+def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year):
+    race_results = get_race_results(driver, race_data, active_drivers)
+    total_podiums = 0
+    total_wins = 0
+
+    for result in race_results:
+        if result["position"] is not None:
+            position = int(result["position"])
+
+        if position <= 3:
+            total_podiums += 1
+        if position == 1:
+            total_wins += 1
+
+    if total_podiums > 0:
+        print(f"\n{driver_full_name} heeft in {year} totaal {total_podiums} het podium (top 3) behaald.")
+
+        if total_wins > 0:
+            print(f"Daarvan heeft {driver_full_name} er {total_wins} daadwerkelijk gewonnen!")
+
+    else: print(f"\n{driver_full_name} heeft in {year} geen podiumplek gehaald.")

@@ -3,7 +3,7 @@ from typing import Any
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_race_results, get_average_position, show_race_results, get_fastest_lap
+from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums
 
 URL = "https://api.openf1.org/v1"
 
@@ -66,7 +66,7 @@ def get_drivers(active_session_keys, year):
                         "driver_number": driver_number
                     }
 
-        table = Table(title=f"\nCoureurs die in {year} hebben gereden:", show_lines=True)
+        table = Table(title=f"\nCoureurs die in {year} hebben gereden:")
         table.add_column("Naam", justify="center")
         table.add_column("Afkorting", justify="center")
         table.add_column("Nummer", justify="center")
@@ -88,7 +88,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
     print(f"\nJe hebt gekozen voor {driver_full_name} in het jaar {year}.\n"
           f"Welke statistieken wil je bekijken?\n")
 
-    table = Table(show_lines=True)
+    table = Table()
     table.add_column("Keuze", justify="center")
     table.add_column("Actie", justify="center")
     table.add_row("1", "Eindstand van alle races")
@@ -116,7 +116,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
             get_fastest_lap(driver, driver_full_name, race_data, active_drivers)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "4":
-            get_total_podiums()
+            get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "5":
             compare_drivers()
@@ -143,8 +143,6 @@ def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
         print("Bedankt voor het gebruiken van de F1 app!")
         exit(1)
 
-def get_total_podiums():
-    pass
 
 def compare_drivers():
     pass
