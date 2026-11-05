@@ -1,13 +1,23 @@
+from typing import Any
+
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_results
+from statistieken import get_race_results, get_average_position, show_race_results, get_fastest_lap
 
 URL = "https://api.openf1.org/v1"
 
 print(f"Welkom bij deze F1 app.\nHier kan je statistieken bekijken, vergelijken en opslaan.\n")
 
 def main():
+    active_drivers, driver, race_data, year = initialize()
+
+    show_main_menu(driver, active_drivers, race_data, year)
+
+    return active_drivers
+
+
+def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
     while year not in ("2023", "2024", "2025"):
         year = input("Ongeldige invoer, ja kan keizen uit 2023 t/m 2025 ")
@@ -15,13 +25,12 @@ def main():
     race_data = get_race_data(year)
     active_drivers = get_drivers(race_data, year)
 
-    driver = input(f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
+    driver = input(
+        f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver not in active_drivers:
         driver = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
+    return active_drivers, driver, race_data, year
 
-    show_main_menu(driver, active_drivers, race_data)
-
-    return active_drivers
 
 def get_race_data(chosen_year):
     params = {'session_name': "Race", "year": chosen_year}
@@ -73,10 +82,10 @@ def get_drivers(active_session_keys, year):
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
-def show_main_menu(driver, active_drivers, race_data):
-    #TODO zorgen dat {driver} geen afkorting meer is, maar de volledige naam
+def show_main_menu(driver, active_drivers, race_data, year):
+    driver_full_name = active_drivers[driver]["full_name"]
 
-    print(f"\nJe hebt gekozen voor {driver}.\n"
+    print(f"\nJe hebt gekozen voor {driver_full_name} in het jaar {year}.\n"
           f"Welke statistieken wil je bekijken?\n")
 
     table = Table(show_lines=True)
@@ -88,7 +97,6 @@ def show_main_menu(driver, active_drivers, race_data):
     table.add_row("4", "Aantal podia's (top 3)")
     table.add_row("5", "Vergelijken met andere coureur")
     table.add_row("0", "Terug")
-    #TODO zorgen dat terug niet stopt maar de coureur opnieuw selecteert
 
     console = Console()
     console.print(table)
@@ -99,24 +107,41 @@ def show_main_menu(driver, active_drivers, race_data):
 
     match menu_choice:
         case "1":
-            get_results(driver, race_data, active_drivers)
+            show_race_results(driver, driver_full_name, race_data, active_drivers)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "2":
-            get_average_position()
+            get_average_position(driver, driver_full_name, race_data, active_drivers)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "3":
-            get_quickest_lap()
+            get_fastest_lap(driver, driver_full_name, race_data, active_drivers)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "4":
             get_total_podiums()
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "5":
             compare_drivers()
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "0":
             return
 
+    return driver_full_name
 
-def get_average_position():
-    pass
-
-def get_quickest_lap():
-    pass
+def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
+    choice = input(f"\nWil je meer statistieken bekijken? Ja/nee ").capitalize().strip()
+    while choice not in ("Ja", "Nee"):
+        choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
+    if choice == "Ja":
+        second_choice = input(f"Je bekijkt nu statistieken van {driver_full_name} uit {year}. Wil je verder met dezelfde gegevens? Ja/nee ").capitalize().strip()
+        while second_choice not in ("Ja", "Nee"):
+            second_choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
+        if second_choice == "Ja":
+            show_main_menu(driver, active_drivers, race_data, year)
+        elif second_choice == "Nee":
+            active_drivers, driver, race_data, year = initialize()
+            show_main_menu(driver, active_drivers, race_data, year)
+    else:
+        print("Bedankt voor het gebruiken van de F1 app!")
+        exit(1)
 
 def get_total_podiums():
     pass
