@@ -1,7 +1,7 @@
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results
+from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions
 
 URL = "https://api.openf1.org/v1"
 
@@ -28,7 +28,6 @@ def initialize():
     while driver not in active_drivers:
         driver = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
     return active_drivers, driver, race_data, year
-
 
 def get_race_data(chosen_year):
     params = {'session_name': "Race", "year": chosen_year}
@@ -99,19 +98,19 @@ def show_main_menu(driver, active_drivers, race_data, year):
     console = Console()
     console.print(table)
 
-    menu_choice = input("Kies een optie: Kies uit 0 t/m 5 ")
+    menu_choice = input(f"Kies een optie: Kies uit 0 t/m 5 \n")
     while menu_choice not in ("0", "1", "2", "3", "4", "5"):
-        menu_choice = input("Ongeldige invoer. Kies 0 t/m 5. ")
+        menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 5. \n")
 
     match menu_choice:
         case "1":
-            show_race_results(driver, driver_full_name, race_data, active_drivers)
+            show_race_results(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "2":
-            get_average_position(driver, driver_full_name, race_data, active_drivers)
+            get_average_position(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "3":
-            get_fastest_lap(driver, driver_full_name, race_data, active_drivers)
+            get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "4":
             get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
@@ -176,8 +175,13 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
             compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "2":
-            get_average_position(driver, driver_full_name, race_data, active_drivers)
-            get_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
+            compare_average_positions(
+                driver, driver_full_name,
+                driver_to_compare, driver_to_compare_full_name,
+                race_data, active_drivers, year
+            )
+            # get_average_position(driver, driver_full_name, race_data, active_drivers, year)
+            # get_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "3":
             get_fastest_lap(driver, driver_full_name, race_data, active_drivers)

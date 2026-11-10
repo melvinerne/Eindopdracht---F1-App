@@ -3,7 +3,7 @@ from rich import print
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
-# from main import get_drivers
+import json
 
 URL = "https://api.openf1.org/v1"
 
@@ -32,7 +32,7 @@ def get_race_results(driver, race_data, active_drivers):
                 print(f"Fout: {response.status_code} - {response.text}")
                 return None
 
-def show_race_results(driver, driver_full_name, race_data, active_drivers):
+def show_race_results(driver, driver_full_name, race_data, active_drivers, year):
         race_results_dict = get_race_results(driver, race_data, active_drivers)
         table = Table(title=f"\nEindstand per race van {driver_full_name}:")
         table.add_column("Race naam", justify="left")
@@ -44,10 +44,10 @@ def show_race_results(driver, driver_full_name, race_data, active_drivers):
                         race_name_combined,
                         str(races["position"])
                 )
-        console = Console()
-        console.print(table)
 
-def get_average_position(driver, driver_full_name, race_data, active_drivers):
+        save_files_as_table("race_results", table, driver, year)
+
+def get_average_position(driver, driver_full_name, race_data, active_drivers, year):
     race_results_dict = get_race_results(driver, race_data, active_drivers)
     total_positions = 0
     races_completed = 0
@@ -58,12 +58,13 @@ def get_average_position(driver, driver_full_name, race_data, active_drivers):
                 total_positions += position
                 races_completed += 1
 
-    average_position = total_positions / races_completed
-    print(f"\nDe gemiddelde positie van {driver_full_name} was {average_position:.2f}.")
+    average_position = f"De gemiddelde positie van {driver_full_name} was {total_positions / races_completed:.2f}."
 
+    print(average_position)
+    save_files_as_txt("average_position", average_position, driver, year)
     return average_position
 
-def get_fastest_lap(driver, driver_full_name, race_data, active_drivers):
+def get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year):
     driver_number = active_drivers[driver]['driver_number']
 
     params = {"driver_number": driver_number}
@@ -90,7 +91,11 @@ def get_fastest_lap(driver, driver_full_name, race_data, active_drivers):
         country = race_data[fastest_session_key]["country_name"]
         circuit = race_data[fastest_session_key]["location"]
 
-        print(Panel.fit(f"De snelste ronde van {driver_full_name} is {fastest_lap} in {country} - {circuit}"))
+        fastest_lap_result = f"De snelste ronde van {driver_full_name} in {year} was {fastest_lap} in {country} - {circuit}"
+
+        print(Panel.fit(fastest_lap_result))
+
+        save_files_as_txt("fastest_lap", fastest_lap_result, driver, year)
 
     else:
         print(f"Fout: {response.status_code} - {response.text}")
@@ -110,14 +115,26 @@ def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
             if position == 1:
                 total_wins += 1
 
+    total_wins_result = ""
+
     if total_podiums > 0:
-        print(f"\n{driver_full_name} heeft in {year} totaal {total_podiums} het podium (top 3) behaald.")
+        total_podiums_result = f"{driver_full_name} heeft in {year} totaal {total_podiums} het podium (top 3) behaald."
+        print(total_podiums_result)
 
         if total_wins > 0:
-            print(f"Daarvan heeft {driver_full_name} er {total_wins} daadwerkelijk gewonnen!")
+            total_wins_result = f"Daarvan heeft {driver_full_name} er {total_wins} daadwerkelijk gewonnen!"
+            print(total_wins_result)
+    else:
+        total_podiums_result = f"{driver_full_name} heeft in {year} geen podiumplek gehaald."
+        print(total_podiums_result)
 
-    else: print(f"\n{driver_full_name} heeft in {year} geen podiumplek gehaald.")
 
+    if total_wins_result:
+        podiums_wins_total = f"{total_podiums_result}\n{total_wins_result}"
+    else:
+        podiums_wins_total = total_podiums_result
+
+    save_files_as_txt("total_podiums", podiums_wins_total, driver, year)
 
 def compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
     driver1_results = get_race_results(driver, race_data, active_drivers)
@@ -145,5 +162,64 @@ def compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_
             str(driver_position),
             str(driver_to_compare_position))
 
-    console = Console()
-    console.print(table)
+    save_files_as_table(f"compare_race_results_with_{driver_to_compare}", table, driver, year)
+
+
+from rich.table import Table
+
+
+def compare_average_positions(driver1, driver1_name, driver2, driver2_name, race_data, active_drivers, year):
+    average_driver1 = get_average_position(driver1, driver1_name, race_data, active_drivers, year)
+    average_driver2 = get_average_position(driver2, driver2_name, race_data, active_drivers, year)
+    table = Table(title=f"Vergelijking gemiddelde positie ({year})")
+    table.add_column("Coureur", justify="left")
+    table.add_column("Gemiddelde Positie", justify="center")
+
+    table.add_row(driver1_name, f"{average_driver1:.2f}")
+    table.add_row(driver2_name, f"{average_driver2:.2f}")
+
+    save_files_as_table("compare_averages", table, f"{driver1}_vs_{driver2}", year)
+
+
+
+def save_files_as_table(function_name, requested_data, driver, year):
+    """
+    Deze functie zorgt ervoor dat de opgevraagde info kan worden weggeschreven met table opmaak.
+    :param function_name: vul hier de naam van de opgevraagde functie in, deze wordt gebruikt in de bestandsnaam
+    :param requested_data: vul hier de aangemaakte data in
+    :return:
+    """
+
+    console = Console(record=True)
+    console.print(requested_data)
+
+    choice = input("Wil je deze resultaten opslaan? Ja/nee ").capitalize().strip()
+    while choice not in ("Ja", "Nee"):
+        choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
+    if choice == "Ja":
+        file_name = f"{function_name} - {driver} - {year}.txt"
+        try:
+            with open(file_name, "w", encoding="utf-8") as f:
+                f.write(console.export_text())
+                print(f"Bestand is opgeslagen als {file_name}.")
+        except:
+            print("Fout bij het opslaan, probeer opnieuw")
+
+def save_files_as_txt(function_name, requested_data, driver, year):
+    """
+    Deze functie zorgt ervoor dat de opgevraagde info kan worden weggeschreven als .txt
+    :param function_name: vul hier de naam van de opgevraagde functie in, deze wordt gebruikt in de bestandsnaam
+    :param requested_data: vul hier de aangemaakte data in
+    :return:
+    """
+    choice = input("Wil je deze resultaten opslaan? Ja/nee ").capitalize().strip()
+    while choice not in ("Ja", "Nee"):
+        choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
+    if choice == "Ja":
+        file_name = f"{function_name} - {driver} - {year}.txt"
+        try:
+            with open(file_name, "w") as bestand:
+                bestand.write(str(requested_data))
+            print(f"Bestand is opgeslagen als {file_name}.")
+        except:
+            print("Fout bij het opslaan, probeer opnieuw")
