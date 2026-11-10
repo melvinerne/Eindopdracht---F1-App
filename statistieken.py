@@ -3,7 +3,6 @@ from rich import print
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
-import json
 
 URL = "https://api.openf1.org/v1"
 
@@ -47,7 +46,7 @@ def show_race_results(driver, driver_full_name, race_data, active_drivers, year)
 
         save_files_as_table("race_results", table, driver, year)
 
-def get_average_position(driver, driver_full_name, race_data, active_drivers, year):
+def calculate_average_position(driver, race_data, active_drivers, driver_full_name):
     race_results_dict = get_race_results(driver, race_data, active_drivers)
     total_positions = 0
     races_completed = 0
@@ -55,16 +54,18 @@ def get_average_position(driver, driver_full_name, race_data, active_drivers, ye
     for race in race_results_dict.values():
         position = race["position"]
         if isinstance(position, int):
-                total_positions += position
-                races_completed += 1
+            total_positions += position
+            races_completed += 1
 
-    average_position = f"De gemiddelde positie van {driver_full_name} was {total_positions / races_completed:.2f}."
+    average = total_positions / races_completed
+    return average
 
-    print(average_position)
-    save_files_as_txt("average_position", average_position, driver, year)
-    return average_position
+def get_average_position(driver, driver_full_name, race_data, active_drivers, year):
+    average = calculate_average_position(driver, race_data, active_drivers, driver_full_name)
+    print(f"De gemiddelde positie van {driver_full_name} was {average:.2f}.")
+    save_files_as_txt("average_position", average, driver, year)
 
-def get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year):
+def calculate_fastest_lap(driver, race_data, active_drivers):
     driver_number = active_drivers[driver]['driver_number']
 
     params = {"driver_number": driver_number}
@@ -91,17 +92,22 @@ def get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year):
         country = race_data[fastest_session_key]["country_name"]
         circuit = race_data[fastest_session_key]["location"]
 
+        return fastest_lap_per_session, fastest_lap, country, circuit
+
+    else:
+        print(f"Fout: {response.status_code} - {response.text}")
+        return None
+
+def get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year):
+        result, fastest_lap, country, circuit = calculate_fastest_lap(driver, race_data, active_drivers)
+
         fastest_lap_result = f"De snelste ronde van {driver_full_name} in {year} was {fastest_lap} in {country} - {circuit}"
 
         print(Panel.fit(fastest_lap_result))
 
         save_files_as_txt("fastest_lap", fastest_lap_result, driver, year)
 
-    else:
-        print(f"Fout: {response.status_code} - {response.text}")
-        return None
-
-def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year):
+def calculate_total_podiums(driver, race_data, active_drivers):
     race_results = get_race_results(driver, race_data, active_drivers)
     total_podiums = 0
     total_wins = 0
@@ -109,12 +115,15 @@ def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
     for result in race_results.values():
         if result["position"] is not None:
             position = int(result["position"])
-
             if position <= 3:
                 total_podiums += 1
             if position == 1:
                 total_wins += 1
 
+    return total_podiums, total_wins
+
+def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year):
+    total_podiums, total_wins = calculate_total_podiums(driver, race_data, active_drivers)
     total_wins_result = ""
 
     if total_podiums > 0:
@@ -127,7 +136,6 @@ def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
     else:
         total_podiums_result = f"{driver_full_name} heeft in {year} geen podiumplek gehaald."
         print(total_podiums_result)
-
 
     if total_wins_result:
         podiums_wins_total = f"{total_podiums_result}\n{total_wins_result}"
@@ -162,25 +170,26 @@ def compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_
             str(driver_position),
             str(driver_to_compare_position))
 
-    save_files_as_table(f"compare_race_results_with_{driver_to_compare}", table, driver, year)
+    save_files_as_table(f"compare_race_results", table, f"{driver}_vs_{driver_to_compare}", year)
 
+def compare_average_positions(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
+    average_driver1 = calculate_average_position(driver, driver_full_name, race_data, active_drivers)
+    average_driver2 = calculate_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
 
-from rich.table import Table
-
-
-def compare_average_positions(driver1, driver1_name, driver2, driver2_name, race_data, active_drivers, year):
-    average_driver1 = get_average_position(driver1, driver1_name, race_data, active_drivers, year)
-    average_driver2 = get_average_position(driver2, driver2_name, race_data, active_drivers, year)
     table = Table(title=f"Vergelijking gemiddelde positie ({year})")
     table.add_column("Coureur", justify="left")
     table.add_column("Gemiddelde Positie", justify="center")
 
-    table.add_row(driver1_name, f"{average_driver1:.2f}")
-    table.add_row(driver2_name, f"{average_driver2:.2f}")
+    table.add_row(driver, f"{average_driver1:.2f}")
+    table.add_row(driver_to_compare, f"{average_driver2:.2f}")
 
-    save_files_as_table("compare_averages", table, f"{driver1}_vs_{driver2}", year)
+    save_files_as_table("compare_average_positions", table, f"{driver}_vs_{driver_to_compare}", year)
 
-
+def compare_fastest_laps(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
+    fastest_driver1 = calculate_fastest_lap(driver, race_data, active_drivers)
+    fastest_driver2 = calculate_fastest_lap(driver_to_compare, driver_to_compare_full_name, active_drivers)
+    print(fastest_driver1)
+    print(fastest_driver2)
 
 def save_files_as_table(function_name, requested_data, driver, year):
     """

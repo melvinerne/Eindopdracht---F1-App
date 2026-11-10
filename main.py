@@ -1,7 +1,7 @@
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions
+from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions, compare_fastest_laps
 
 URL = "https://api.openf1.org/v1"
 
@@ -144,10 +144,8 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
     active_drivers = get_drivers(race_data, year)
 
     driver_to_compare = input(f"Met welke coureur wil je {driver_full_name} vergelijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
-    while driver_to_compare == driver:
-        driver_to_compare = input(f"{driver} is al geselecteerd. Kies een andere couruer ").upper().strip()
-    while driver_to_compare not in active_drivers:
-        driver_to_compare = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
+    while driver_to_compare == driver or driver_to_compare not in active_drivers:
+        driver_to_compare = input(f"{driver} is al geselecteerd of bestaat niet. Kies een andere couruer ").upper().strip()
 
     driver_to_compare_full_name =  active_drivers[driver_to_compare]["full_name"]
 
@@ -175,17 +173,10 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
             compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "2":
-            compare_average_positions(
-                driver, driver_full_name,
-                driver_to_compare, driver_to_compare_full_name,
-                race_data, active_drivers, year
-            )
-            # get_average_position(driver, driver_full_name, race_data, active_drivers, year)
-            # get_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
+            compare_average_positions(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "3":
-            get_fastest_lap(driver, driver_full_name, race_data, active_drivers)
-            get_fastest_lap(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
+            compare_fastest_laps(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "4":
             get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
