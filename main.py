@@ -1,9 +1,7 @@
-from typing import Any
-
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums
+from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results
 
 URL = "https://api.openf1.org/v1"
 
@@ -119,7 +117,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
             get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "5":
-            compare_drivers()
+            compare_drivers(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "0":
             return
@@ -143,8 +141,56 @@ def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
         print("Bedankt voor het gebruiken van de F1 app!")
         exit(1)
 
+def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
+    active_drivers = get_drivers(race_data, year)
 
-def compare_drivers():
-    pass
+    driver_to_compare = input(f"Met welke coureur wil je {driver_full_name} vergelijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
+    while driver_to_compare == driver:
+        driver_to_compare = input(f"{driver} is al geselecteerd. Kies een andere couruer ").upper().strip()
+    while driver_to_compare not in active_drivers:
+        driver_to_compare = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
+
+    driver_to_compare_full_name =  active_drivers[driver_to_compare]["full_name"]
+
+    print(f"\nJe hebt gekozen om {driver_full_name} te vergelijken met {driver_to_compare_full_name} in het jaar {year}.\n"
+          f"Welke statistieken wil je vergelijken?\n")
+
+    table = Table()
+    table.add_column("Keuze", justify="center")
+    table.add_column("Actie", justify="center")
+    table.add_row("1", "Eindstand van alle races")
+    table.add_row("2", "Gemiddelde positie")
+    table.add_row("3", "Snelste ronde van het seizoen")
+    table.add_row("4", "Aantal podia's (top 3)")
+    table.add_row("0", "Terug")
+
+    console = Console()
+    console.print(table)
+
+    menu_choice = input("Kies een optie: Kies uit 0 t/m 4 ")
+    while menu_choice not in ("0", "1", "2", "3", "4"):
+        menu_choice = input("Ongeldige invoer. Kies 0 t/m 4. ")
+
+    match menu_choice:
+        case "1":
+            compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+        case "2":
+            get_average_position(driver, driver_full_name, race_data, active_drivers)
+            get_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+        case "3":
+            get_fastest_lap(driver, driver_full_name, race_data, active_drivers)
+            get_fastest_lap(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+        case "4":
+            get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
+            get_total_podiums(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
+            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+        case "0":
+            return
+
+
+
 
 main()
