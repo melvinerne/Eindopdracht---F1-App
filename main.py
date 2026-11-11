@@ -1,21 +1,46 @@
 import requests
+import logging
 from rich.table import Table
 from rich.console import Console
 from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions, compare_fastest_laps, compare_total_podiums
+from resultaten import show_saved_results
+
+logging.basicConfig(
+    filename="f1_app.log",
+    filemode="a",
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+)
 
 URL = "https://api.openf1.org/v1"
 
 print(f"Welkom bij deze F1 app.\nHier kan je statistieken bekijken, vergelijken en opslaan.\n")
 
 def main():
-    active_drivers, driver, race_data, year = initialize()
-    show_main_menu(driver, active_drivers, race_data, year)
+    print(f"1. Statistieken ophalen en vergelijken\n"
+          f"2. Opgeslagen data bekijken\n"
+          f"0. Stop")
+    choice = input("Maak je keuze: ")
+    while choice not in ("0", "1", "2"):
+        logging.warning("Ongeldige invoer bij initialisatie")
+        choice = input("Ongeldige invoer, kies 1, 2 of 0 ").strip()
 
-    return active_drivers
+    if choice == "1":
+        active_drivers, driver, race_data, year = initialize()
+        show_main_menu(driver, active_drivers, race_data, year)
+        return active_drivers
+    if choice == "2":
+        show_saved_results()
+    if choice == "0":
+        return
+
+
 
 def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
     while year not in ("2023", "2024", "2025"):
+        logging.warning("Ongeldig jaar ingevoerd")
         year = input("Ongeldige invoer, ja kan keizen uit 2023 t/m 2025 ")
 
     race_data = get_race_data(year)
@@ -24,12 +49,18 @@ def initialize():
     driver = input(
         f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver not in active_drivers:
+        logging.warning("Ongeldige coureur ingevoerd")
         driver = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
     return active_drivers, driver, race_data, year
 
 def get_race_data(chosen_year):
     params = {'session_name': "Race", "year": chosen_year}
-    response = requests.get(f"{URL}/sessions",params=params)
+    try:
+        response = requests.get(f"{URL}/sessions",params=params)
+    except requests.exceptions.RequestException as error:
+        logging.error(f"API-fout: {error}")
+        print("De OpenF1 API is momenteel niet bereikbaar.")
+        return None
 
     if response.ok:
         data = response.json()
@@ -39,11 +70,17 @@ def get_race_data(chosen_year):
 
         return race_data_dict
     else:
+        logging.error("API-fout bij race data", response.status_code, response.url, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
 def get_drivers(active_session_keys, year):
-    response = requests.get(f"{URL}/drivers")
+    try:
+        response = requests.get(f"{URL}/drivers")
+    except requests.exceptions.RequestException as error:
+        logging.error(f"API-fout: {error}")
+        print("De OpenF1 API is momenteel niet bereikbaar.")
+        return None
 
     if response.ok:
         data = response.json()
@@ -74,6 +111,7 @@ def get_drivers(active_session_keys, year):
 
         return driver_dict
     else:
+        logging.error("API-fout bij driver data", response.status_code, response.url, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
@@ -91,14 +129,16 @@ def show_main_menu(driver, active_drivers, race_data, year):
     table.add_row("3", "Snelste ronde van het seizoen")
     table.add_row("4", "Aantal podia's (top 3)")
     table.add_row("5", "Vergelijken met andere coureur")
+    table.add_row("6", "Opgeslagen resultaten")
     table.add_row("0", "Terug")
 
     console = Console()
     console.print(table)
 
-    menu_choice = input(f"Kies een optie: Kies uit 0 t/m 5 ")
-    while menu_choice not in ("0", "1", "2", "3", "4", "5"):
-        menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 5. ")
+    menu_choice = input(f"Kies een optie: Kies uit 0 t/m 6 ")
+    while menu_choice not in ("0", "1", "2", "3", "4", "5", "6"):
+        logging.warning("Ongeldige menukeuze ingevoerd")
+        menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 6. ")
 
     match menu_choice:
         case "1":
@@ -114,8 +154,11 @@ def show_main_menu(driver, active_drivers, race_data, year):
             get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "5":
-            compare_drivers(driver, driver_full_name, race_data, active_drivers, year)
+            compare_drivers(driver, driver_full_name, race_data, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+        case "6":
+            show_saved_results()
+            # keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "0":
             return
 
@@ -124,6 +167,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
 def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
     choice = input(f"Wil je meer statistieken bekijken? Ja/nee ").capitalize().strip()
     while choice not in ("Ja", "Nee"):
+        logging.warning("Ongeldige invoer bij vraag om door te gaan ingevoerd")
         choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
     if choice == "Ja":
         second_choice = input(f"Je bekijkt nu statistieken van {driver_full_name} uit {year}. Wil je verder met dezelfde gegevens? Ja/nee ").capitalize().strip()
@@ -138,12 +182,13 @@ def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
         print("Bedankt voor het gebruiken van de F1 app!")
         exit(1)
 
-def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
+def compare_drivers(driver, driver_full_name, race_data, year):
     active_drivers = get_drivers(race_data, year)
 
     driver_to_compare = input(f"Met welke coureur wil je {driver_full_name} vergelijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver_to_compare == driver or driver_to_compare not in active_drivers:
-        driver_to_compare = input(f"{driver} is al geselecteerd of bestaat niet. Kies een andere couruer ").upper().strip()
+        logging.warning("Ongeldige coureur om te vergelijken ingevoerd")
+        driver_to_compare = input(f"{driver} is al geselecteerd of bestaat niet. Kies een andere coureur ").upper().strip()
 
     driver_to_compare_full_name =  active_drivers[driver_to_compare]["full_name"]
 
@@ -164,6 +209,7 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
 
     menu_choice = input("Kies een optie: Kies uit 0 t/m 4 ")
     while menu_choice not in ("0", "1", "2", "3", "4"):
+        logging.warning("Ongeldige menukeuze om te vergelijken ingevoerd")
         menu_choice = input("Ongeldige invoer. Kies 0 t/m 4. ")
 
     match menu_choice:
@@ -181,8 +227,5 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "0":
             return
-
-
-
 
 main()

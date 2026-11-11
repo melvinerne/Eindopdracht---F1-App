@@ -1,8 +1,10 @@
 import requests
+import logging
 from rich import print
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
+from resultaten import RESULTS_DIR
 
 URL = "https://api.openf1.org/v1"
 
@@ -10,7 +12,12 @@ URL = "https://api.openf1.org/v1"
 def get_race_results(driver, race_data, active_drivers):
         driver_number = active_drivers[driver]['driver_number']
         params = {"driver_number": driver_number}
-        response = requests.get(f"{URL}/session_result", params=params)
+        try:
+            response = requests.get(f"{URL}/session_result", params=params)
+        except requests.exceptions.RequestException as error:
+            logging.error(f"API-fout: {error}")
+            print("De OpenF1 API is momenteel niet bereikbaar.")
+            return None
 
         if response.ok:
                 all_races = response.json()
@@ -28,8 +35,9 @@ def get_race_results(driver, race_data, active_drivers):
                                 }
                 return race_results_dict
         else:
-                print(f"Fout: {response.status_code} - {response.text}")
-                return None
+            logging.error("API-fout bij race results", response.status_code, response.url, response.text)
+            print(f"Fout: {response.status_code} - {response.text}")
+            return None
 
 def show_race_results(driver, driver_full_name, race_data, active_drivers, year):
         race_results_dict = get_race_results(driver, race_data, active_drivers)
@@ -70,7 +78,12 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
     driver_number = active_drivers[driver]['driver_number']
 
     params = {"driver_number": driver_number}
-    response = requests.get(f"{URL}/laps", params=params)
+    try:
+        response = requests.get(f"{URL}/laps", params=params)
+    except requests.exceptions.RequestException as error:
+        logging.error(f"API-fout: {error}")
+        print("De OpenF1 API is momenteel niet bereikbaar.")
+        return None
 
     if response.ok:
         lap_data = response.json()
@@ -96,11 +109,12 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
         return fastest_lap, country, circuit
 
     else:
+        logging.error("API-fout bij fastest lap", response.status_code, response.url, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
 def get_fastest_lap(driver, driver_full_name, race_data, active_drivers, year):
-        result, fastest_lap, country, circuit = calculate_fastest_lap(driver, race_data, active_drivers)
+        fastest_lap, country, circuit = calculate_fastest_lap(driver, race_data, active_drivers)
 
         fastest_lap_result = f"De snelste ronde van {driver_full_name} in {year} was {fastest_lap} in {country} - {circuit}"
 
@@ -204,6 +218,8 @@ def compare_fastest_laps(driver, driver_full_name, driver_to_compare, driver_to_
     print(Panel.fit(fastest_lap_result1))
     print(Panel.fit(fastest_lap_result2))
 
+    save_files_as_txt("compare_fastest_laps", combined, f"{driver}_vs_{driver_to_compare}", year)
+
 def compare_total_podiums(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
     total_podiums1, total_wins1 = calculate_total_podiums(driver, race_data, active_drivers)
     total_podiums2, total_wins2 = calculate_total_podiums(driver_to_compare, race_data, active_drivers)
@@ -230,12 +246,14 @@ def save_files_as_table(function_name, requested_data, driver, year):
     while choice not in ("Ja", "Nee"):
         choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
     if choice == "Ja":
-        file_name = f"{function_name} - {driver} - {year}.txt"
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        file_path = RESULTS_DIR / f"{year} - {driver} - {function_name}.txt"
         try:
-            with open(file_name, "w", encoding="utf-8") as f:
-                f.write(console.export_text())
-                print(f"Bestand is opgeslagen als {file_name}.")
-        except:
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.write(console.export_text())
+                print(f"Bestand is opgeslagen als {file_path}.")
+        except OSError as error:
+            logging.error("Opslaan mislukt", file_path, error)
             print("Fout bij het opslaan, probeer opnieuw")
 
 def save_files_as_txt(function_name, requested_data, driver, year):
@@ -249,10 +267,12 @@ def save_files_as_txt(function_name, requested_data, driver, year):
     while choice not in ("Ja", "Nee"):
         choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
     if choice == "Ja":
-        file_name = f"{function_name} - {driver} - {year}.txt"
+        RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+        file_path = RESULTS_DIR / f"{year} - {driver} - {function_name}.txt"
         try:
-            with open(file_name, "w") as bestand:
-                bestand.write(str(requested_data))
-            print(f"\nBestand is opgeslagen als {file_name}.")
-        except:
+            with open(file_path, "w") as file:
+                file.write(str(requested_data))
+            print(f"Bestand is opgeslagen als {file_path}.")
+        except OSError as error:
+            logging.error("Opslaan mislukt", file_path, error)
             print("Fout bij het opslaan, probeer opnieuw")
