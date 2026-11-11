@@ -1,5 +1,4 @@
 import logging
-from logging import error
 from pathlib import Path
 
 RESULTS_DIR = Path("resultaten")
@@ -15,7 +14,7 @@ def open_file(file_name):
         print(f"\nInhoud van {file_name}:\n")
         print(f"{text}\n")
     except:
-        logging.error("Bestand lezen mislukt", file_name, error)
+        logging.error("Bestand lezen mislukt")
         print("Bestand kon niet worden geopend")
 
 def delete_file(file_name):
@@ -23,7 +22,7 @@ def delete_file(file_name):
         (RESULTS_DIR / file_name).unlink()
         print(f"{file_name} is verwijderd")
     except:
-        logging.error("Bestand verwijjderen mislukt", file_name, error())
+        logging.error("Bestand verwijjderen mislukt")
         print("Bestand kon niet worden verwijderd")
 
 def show_saved_results():
@@ -40,7 +39,7 @@ def show_saved_results():
         choice = input(f"Kies het nummer van het bestand die je wilt selecteren.\n"
                        f"Kies 0 om te stoppen. ").strip()
         while not choice.isdigit() or int(choice) > len(files):
-            logging.warnng("Ongeldig bestandsnummer ingevoerd", choice)
+            logging.warning("Ongeldig bestandsnummer ingevoerd")
             choice = input("Ongeldige invoer, probeer opnieuw").strip()
 
         choice = int(choice)

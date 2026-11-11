@@ -35,7 +35,7 @@ def get_race_results(driver, race_data, active_drivers):
                                 }
                 return race_results_dict
         else:
-            logging.error("API-fout bij race results", response.status_code, response.url, response.text)
+            logging.error("API-fout bij race results")
             print(f"Fout: {response.status_code} - {response.text}")
             return None
 
@@ -94,11 +94,8 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
             lap_duration = lap["lap_duration"]
 
             if session_key in race_data and lap_duration is not None:
-                if lap_duration not in fastest_lap_per_session:
+                if session_key not in fastest_lap_per_session or lap_duration < fastest_lap_per_session[session_key]:
                     fastest_lap_per_session[session_key] = lap_duration
-                else:
-                    if lap_duration < fastest_lap_per_session[session_key]:
-                        fastest_lap_per_session = lap_duration
 
         fastest_lap = min(fastest_lap_per_session.values())
         fastest_session_key = min(fastest_lap_per_session, key=fastest_lap_per_session.get)
@@ -109,7 +106,7 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
         return fastest_lap, country, circuit
 
     else:
-        logging.error("API-fout bij fastest lap", response.status_code, response.url, response.text)
+        logging.error("API-fout bij fastest lap")
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
@@ -253,7 +250,7 @@ def save_files_as_table(function_name, requested_data, driver, year):
                 file.write(console.export_text())
                 print(f"Bestand is opgeslagen als {file_path}.")
         except OSError as error:
-            logging.error("Opslaan mislukt", file_path, error)
+            logging.error("Opslaan mislukt")
             print("Fout bij het opslaan, probeer opnieuw")
 
 def save_files_as_txt(function_name, requested_data, driver, year):
@@ -274,5 +271,5 @@ def save_files_as_txt(function_name, requested_data, driver, year):
                 file.write(str(requested_data))
             print(f"Bestand is opgeslagen als {file_path}.")
         except OSError as error:
-            logging.error("Opslaan mislukt", file_path, error)
+            logging.error("Opslaan mislukt")
             print("Fout bij het opslaan, probeer opnieuw")

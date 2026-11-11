@@ -18,24 +18,23 @@ URL = "https://api.openf1.org/v1"
 print(f"Welkom bij deze F1 app.\nHier kan je statistieken bekijken, vergelijken en opslaan.\n")
 
 def main():
-    print(f"1. Statistieken ophalen en vergelijken\n"
-          f"2. Opgeslagen data bekijken\n"
-          f"0. Stop")
-    choice = input("Maak je keuze: ")
-    while choice not in ("0", "1", "2"):
-        logging.warning("Ongeldige invoer bij initialisatie")
-        choice = input("Ongeldige invoer, kies 1, 2 of 0 ").strip()
+    while True:
+        print(f"1. Statistieken ophalen en vergelijken\n"
+              f"2. Opgeslagen data bekijken\n"
+              f"0. Stop")
+        choice = input("Maak je keuze: ")
+        while choice not in ("0", "1", "2"):
+            logging.warning("Ongeldige invoer bij initialisatie")
+            choice = input("Ongeldige invoer, kies 1, 2 of 0 ").strip()
 
-    if choice == "1":
-        active_drivers, driver, race_data, year = initialize()
-        show_main_menu(driver, active_drivers, race_data, year)
-        return active_drivers
-    if choice == "2":
-        show_saved_results()
-    if choice == "0":
-        return
-
-
+        if choice == "1":
+            active_drivers, driver, race_data, year = initialize()
+            show_main_menu(driver, active_drivers, race_data, year)
+            return active_drivers
+        if choice == "2":
+            show_saved_results()
+        if choice == "0":
+            return
 
 def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
@@ -70,7 +69,7 @@ def get_race_data(chosen_year):
 
         return race_data_dict
     else:
-        logging.error("API-fout bij race data", response.status_code, response.url, response.text)
+        logging.error("API-fout bij race data")
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
@@ -111,7 +110,7 @@ def get_drivers(active_session_keys, year):
 
         return driver_dict
     else:
-        logging.error("API-fout bij driver data", response.status_code, response.url, response.text)
+        logging.error("API-fout bij driver data")
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
@@ -158,7 +157,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "6":
             show_saved_results()
-            # keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
+            show_main_menu(driver, active_drivers, race_data, year)
         case "0":
             return
 
