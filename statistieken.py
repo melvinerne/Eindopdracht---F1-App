@@ -33,7 +33,7 @@ def get_race_results(driver, race_data, active_drivers):
 
 def show_race_results(driver, driver_full_name, race_data, active_drivers, year):
         race_results_dict = get_race_results(driver, race_data, active_drivers)
-        table = Table(title=f"\nEindstand per race van {driver_full_name}:")
+        table = Table(title=f"Eindstand per race van {driver_full_name}:")
         table.add_column("Race naam", justify="left")
         table.add_column("End position", justify="center")
 
@@ -46,7 +46,7 @@ def show_race_results(driver, driver_full_name, race_data, active_drivers, year)
 
         save_files_as_table("race_results", table, driver, year)
 
-def calculate_average_position(driver, race_data, active_drivers, driver_full_name):
+def calculate_average_position(driver, race_data, active_drivers):
     race_results_dict = get_race_results(driver, race_data, active_drivers)
     total_positions = 0
     races_completed = 0
@@ -61,9 +61,10 @@ def calculate_average_position(driver, race_data, active_drivers, driver_full_na
     return average
 
 def get_average_position(driver, driver_full_name, race_data, active_drivers, year):
-    average = calculate_average_position(driver, race_data, active_drivers, driver_full_name)
+    average = calculate_average_position(driver, race_data, active_drivers)
+    average_text = f"De gemiddelde positie van {driver_full_name} was {average:.2f}."
     print(f"De gemiddelde positie van {driver_full_name} was {average:.2f}.")
-    save_files_as_txt("average_position", average, driver, year)
+    save_files_as_txt("average_position", average_text, driver, year)
 
 def calculate_fastest_lap(driver, race_data, active_drivers):
     driver_number = active_drivers[driver]['driver_number']
@@ -92,7 +93,7 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
         country = race_data[fastest_session_key]["country_name"]
         circuit = race_data[fastest_session_key]["location"]
 
-        return fastest_lap_per_session, fastest_lap, country, circuit
+        return fastest_lap, country, circuit
 
     else:
         print(f"Fout: {response.status_code} - {response.text}")
@@ -124,10 +125,17 @@ def calculate_total_podiums(driver, race_data, active_drivers):
 
 def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year):
     total_podiums, total_wins = calculate_total_podiums(driver, race_data, active_drivers)
+
+    podiums_wins_total = podium_result_message(driver_full_name, total_podiums, total_wins, year)
+
+    save_files_as_txt("total_podiums", podiums_wins_total, driver, year)
+
+
+def podium_result_message(driver_full_name, total_podiums, total_wins, year):
     total_wins_result = ""
 
     if total_podiums > 0:
-        total_podiums_result = f"{driver_full_name} heeft in {year} totaal {total_podiums} het podium (top 3) behaald."
+        total_podiums_result = f"{driver_full_name} heeft in {year} totaal {total_podiums}x het podium (top 3) behaald."
         print(total_podiums_result)
 
         if total_wins > 0:
@@ -141,8 +149,8 @@ def get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
         podiums_wins_total = f"{total_podiums_result}\n{total_wins_result}"
     else:
         podiums_wins_total = total_podiums_result
+    return podiums_wins_total
 
-    save_files_as_txt("total_podiums", podiums_wins_total, driver, year)
 
 def compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
     driver1_results = get_race_results(driver, race_data, active_drivers)
@@ -172,9 +180,9 @@ def compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_
 
     save_files_as_table(f"compare_race_results", table, f"{driver}_vs_{driver_to_compare}", year)
 
-def compare_average_positions(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
-    average_driver1 = calculate_average_position(driver, driver_full_name, race_data, active_drivers)
-    average_driver2 = calculate_average_position(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers)
+def compare_average_positions(driver, driver_to_compare, race_data, active_drivers, year):
+    average_driver1 = calculate_average_position(driver, race_data, active_drivers)
+    average_driver2 = calculate_average_position(driver_to_compare, race_data, active_drivers)
 
     table = Table(title=f"Vergelijking gemiddelde positie ({year})")
     table.add_column("Coureur", justify="left")
@@ -186,10 +194,26 @@ def compare_average_positions(driver, driver_full_name, driver_to_compare, drive
     save_files_as_table("compare_average_positions", table, f"{driver}_vs_{driver_to_compare}", year)
 
 def compare_fastest_laps(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
-    fastest_driver1 = calculate_fastest_lap(driver, race_data, active_drivers)
-    fastest_driver2 = calculate_fastest_lap(driver_to_compare, driver_to_compare_full_name, active_drivers)
-    print(fastest_driver1)
-    print(fastest_driver2)
+    fastest_lap1, country1, circuit1 = calculate_fastest_lap(driver, race_data, active_drivers)
+    fastest_lap2, country2, circuit2 = calculate_fastest_lap(driver_to_compare, race_data, active_drivers)
+
+    fastest_lap_result1 = f"De snelste ronde van {driver_full_name} in {year} was {fastest_lap1} in {country1} - {circuit1}"
+    fastest_lap_result2 = f"De snelste ronde van {driver_to_compare_full_name} in {year} was {fastest_lap2} in {country2} - {circuit2}"
+    combined = f"{fastest_lap_result1}\n{fastest_lap_result2}"
+
+    print(Panel.fit(fastest_lap_result1))
+    print(Panel.fit(fastest_lap_result2))
+
+def compare_total_podiums(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year):
+    total_podiums1, total_wins1 = calculate_total_podiums(driver, race_data, active_drivers)
+    total_podiums2, total_wins2 = calculate_total_podiums(driver_to_compare, race_data, active_drivers)
+
+    podiums_wins_total1 = podium_result_message(driver_full_name, total_podiums1, total_wins1, year)
+    print("")
+    podiums_wins_total2 = podium_result_message(driver_to_compare_full_name, total_podiums2, total_wins2, year)
+    combined = f"{podiums_wins_total1}\n\n{podiums_wins_total2}"
+
+    save_files_as_txt("compare_total_podiums", combined, f"{driver}_vs_{driver_to_compare}", year)
 
 def save_files_as_table(function_name, requested_data, driver, year):
     """
@@ -229,6 +253,6 @@ def save_files_as_txt(function_name, requested_data, driver, year):
         try:
             with open(file_name, "w") as bestand:
                 bestand.write(str(requested_data))
-            print(f"Bestand is opgeslagen als {file_name}.")
+            print(f"\nBestand is opgeslagen als {file_name}.")
         except:
             print("Fout bij het opslaan, probeer opnieuw")

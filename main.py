@@ -1,7 +1,7 @@
 import requests
 from rich.table import Table
 from rich.console import Console
-from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions, compare_fastest_laps
+from statistieken import get_average_position, show_race_results, get_fastest_lap, get_total_podiums, compare_race_results, compare_average_positions, compare_fastest_laps, compare_total_podiums
 
 URL = "https://api.openf1.org/v1"
 
@@ -9,11 +9,9 @@ print(f"Welkom bij deze F1 app.\nHier kan je statistieken bekijken, vergelijken 
 
 def main():
     active_drivers, driver, race_data, year = initialize()
-
     show_main_menu(driver, active_drivers, race_data, year)
 
     return active_drivers
-
 
 def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
@@ -83,7 +81,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
     driver_full_name = active_drivers[driver]["full_name"]
 
     print(f"\nJe hebt gekozen voor {driver_full_name} in het jaar {year}.\n"
-          f"Welke statistieken wil je bekijken?\n")
+          f"Welke statistieken wil je bekijken?")
 
     table = Table()
     table.add_column("Keuze", justify="center")
@@ -98,9 +96,9 @@ def show_main_menu(driver, active_drivers, race_data, year):
     console = Console()
     console.print(table)
 
-    menu_choice = input(f"Kies een optie: Kies uit 0 t/m 5 \n")
+    menu_choice = input(f"Kies een optie: Kies uit 0 t/m 5 ")
     while menu_choice not in ("0", "1", "2", "3", "4", "5"):
-        menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 5. \n")
+        menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 5. ")
 
     match menu_choice:
         case "1":
@@ -124,7 +122,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
     return driver_full_name
 
 def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
-    choice = input(f"\nWil je meer statistieken bekijken? Ja/nee ").capitalize().strip()
+    choice = input(f"Wil je meer statistieken bekijken? Ja/nee ").capitalize().strip()
     while choice not in ("Ja", "Nee"):
         choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
     if choice == "Ja":
@@ -173,14 +171,13 @@ def compare_drivers(driver, driver_full_name, race_data, active_drivers, year):
             compare_race_results(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "2":
-            compare_average_positions(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
+            compare_average_positions(driver, driver_to_compare, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "3":
             compare_fastest_laps(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "4":
-            get_total_podiums(driver, driver_full_name, race_data, active_drivers, year)
-            get_total_podiums(driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
+            compare_total_podiums(driver, driver_full_name, driver_to_compare, driver_to_compare_full_name, race_data, active_drivers, year)
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "0":
             return
