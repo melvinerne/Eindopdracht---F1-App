@@ -49,8 +49,7 @@ def initialize():
         print("Kan de gegevens nu niet ophalen. Probeer het later opnieuw.")
         exit(1)
 
-    driver = input(
-        f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
+    driver = input(f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver not in active_drivers:
         logging.warning("Ongeldige coureur ingevoerd: '%s'", driver)
         driver = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
@@ -68,15 +67,14 @@ def get_race_data(chosen_year):
                 for session in data}
 
             return race_data_dict
+        else:
+            logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
+            print(f"Fout: {response.status_code} - {response.text}")
+            return None
 
     except requests.exceptions.RequestException as error:
         logging.error("Verbindingsfout bij race results voor race data '%s'", error)
         print("De OpenF1 API is momenteel niet bereikbaar.")
-        return None
-
-    else:
-        logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
-        print(f"Fout: {response.status_code} - {response.text}")
         return None
 
 def get_drivers(active_session_keys, year):
@@ -98,28 +96,27 @@ def get_drivers(active_session_keys, year):
                             "full_name": driver_full_name,
                             "driver_number": driver_number
                         }
+        else:
+            logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
+            print(f"Fout: {response.status_code} - {response.text}")
+            return None
 
-                table = Table(title=f"\nCoureurs die in {year} hebben gereden:")
-                table.add_column("Naam", justify="center")
-                table.add_column("Afkorting", justify="center")
-                table.add_column("Nummer", justify="center")
+        table = Table(title=f"\nCoureurs die in {year} hebben gereden:")
+        table.add_column("Naam", justify="center")
+        table.add_column("Afkorting", justify="center")
+        table.add_column("Nummer", justify="center")
 
-                for driver_acronym, values in sorted(driver_dict.items()):
-                    table.add_row(values["full_name"], driver_acronym, values["driver_number"])
+        for driver_acronym, values in sorted(driver_dict.items()):
+            table.add_row(values["full_name"], driver_acronym, values["driver_number"])
 
-                console = Console()
-                console.print(table)
+        console = Console()
+        console.print(table)
 
-                return driver_dict
+        return driver_dict
 
     except requests.exceptions.RequestException as error:
         logging.error("Verbindingsfout bij race results voor get drivers '%s'", error)
         print("De OpenF1 API is momenteel niet bereikbaar.")
-        return None
-
-    else:
-        logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
-        print(f"Fout: {response.status_code} - {response.text}")
         return None
 
 def show_main_menu(driver, active_drivers, race_data, year):

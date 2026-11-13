@@ -76,7 +76,7 @@ def show_saved_results():
                        f"2. Notitie toevoegen\n"
                        f"3. Verwijderen\n"
                        f"4. Ander bestand selecteren\n"
-                       f"0. Stop\n"
+                       f"0. Terug naar hoofdmenu\n"
                        f"Kies het nummer van je optie: ").strip()
         while action not in ("1", "2", "3", "4", "0"):
             logging.warning("Ongeldige invoer bij openen/verwijderen: '%s'", action)
