@@ -33,7 +33,9 @@ def main():
         if choice == "2":
             show_saved_results()
         if choice == "0":
-            return
+            print("Bedankt voor het gebruiken van de F1 app!")
+            exit(1)
+
 
 def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
@@ -181,9 +183,8 @@ def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
         elif second_choice == "Nee":
             active_drivers, driver, race_data, year = initialize()
             show_main_menu(driver, active_drivers, race_data, year)
-    else:
-        print("Bedankt voor het gebruiken van de F1 app!")
-        exit(1)
+    if choice == "Nee":
+        return
 
 def compare_drivers(driver, driver_full_name, race_data, year):
     active_drivers = get_drivers(race_data, year)
