@@ -13,16 +13,16 @@ def open_file(file_name):
         file_path = (RESULTS_DIR / file_name).read_text(encoding="utf-8")
         print(f"\nInhoud van {file_name}:\n")
         print(f"{file_path}\n")
-    except:
-        logging.error("Bestand lezen mislukt: '%s'", file_name)
+    except OSError as error:
+        logging.error("Bestand lezen mislukt: '%s'", error)
         print("Bestand kon niet worden geopend")
 
 def delete_file(file_name):
     try:
         (RESULTS_DIR / file_name).unlink()
         print(f"{file_name} is verwijderd")
-    except:
-        logging.error("Bestand verwijjderen mislukt: '%s'", file_name)
+    except OSError as error:
+        logging.error("Bestand verwijjderen mislukt: '%s'", error)
         print("Bestand kon niet worden verwijderd")
 
 
@@ -40,12 +40,12 @@ def add_note(file_name):
         return
 
     try:
-        with file_path.open("a", encoding="utf-8") as f:
-            f.write(f"\n\nNotitie:\n" + added_content)
+        text = file_path.read_text(encoding="utf-8")
+        text = text.split("\n\nNotitie:\n")[0]
+        file_path.write_text(f"{text}\n\nNotitie:\n{added_content}\n", encoding="utf-8")
         print(f'{file_name} is aangepast, "{added_content}" is toegevoegd')
-        print(f"Dit is de inhoud van {file_name} nu:")
-    except Exception:
-        logging.error("Bestand aanpassen mislukt: '%s'", file_path)
+    except OSError as error:
+        logging.error("Bestand aanpassen mislukt: '%s'", error)
         print("Bestand kon niet worden aangepast")
 
 

@@ -43,7 +43,11 @@ def initialize():
         year = input("Ongeldige invoer, ja kan kiezen uit 2023 t/m 2025 ")
 
     race_data = get_race_data(year)
-    active_drivers = get_drivers(race_data, year)
+    active_drivers = get_drivers(race_data, year) if race_data else None
+    if not active_drivers:
+        logging.critical("Race data ophalen (initialisatie) mislukt")
+        print("Kan de gegevens nu niet ophalen. Probeer het later opnieuw.")
+        exit(1)
 
     driver = input(
         f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
@@ -56,61 +60,65 @@ def get_race_data(chosen_year):
     params = {'session_name': "Race", "year": chosen_year}
     try:
         response = requests.get(f"{URL}/sessions",params=params, timeout=10)
+
+        if response.ok:
+            data = response.json()
+            race_data_dict = {session["session_key"]: {
+                "country_name": session["country_name"], "location": session['location']}
+                for session in data}
+
+            return race_data_dict
+
     except requests.exceptions.RequestException as error:
-        logging.error(f"API-fout: {error}")
+        logging.error("Verbindingsfout bij race results voor race data '%s'", error)
         print("De OpenF1 API is momenteel niet bereikbaar.")
         return None
 
-    if response.ok:
-        data = response.json()
-        race_data_dict = {session["session_key"]: {
-            "country_name": session["country_name"], "location": session['location']}
-            for session in data}
-
-        return race_data_dict
     else:
-        logging.error("API-fout bij race data")
+        logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
 def get_drivers(active_session_keys, year):
     try:
         response = requests.get(f"{URL}/drivers")
+
+        if response.ok:
+            data = response.json()
+            driver_dict = {}
+
+            for driver_entry in data:
+                if driver_entry.get("session_key") in active_session_keys:
+                    driver_acronym = driver_entry.get("name_acronym")
+                    driver_full_name = driver_entry.get("full_name")
+                    driver_number = str(driver_entry.get("driver_number"))
+
+                    if driver_acronym and driver_full_name and driver_number not in driver_dict:
+                        driver_dict[driver_acronym] = {
+                            "full_name": driver_full_name,
+                            "driver_number": driver_number
+                        }
+
+                table = Table(title=f"\nCoureurs die in {year} hebben gereden:")
+                table.add_column("Naam", justify="center")
+                table.add_column("Afkorting", justify="center")
+                table.add_column("Nummer", justify="center")
+
+                for driver_acronym, values in sorted(driver_dict.items()):
+                    table.add_row(values["full_name"], driver_acronym, values["driver_number"])
+
+                console = Console()
+                console.print(table)
+
+                return driver_dict
+
     except requests.exceptions.RequestException as error:
-        logging.error(f"API-fout: {error}")
+        logging.error("Verbindingsfout bij race results voor get drivers '%s'", error)
         print("De OpenF1 API is momenteel niet bereikbaar.")
         return None
 
-    if response.ok:
-        data = response.json()
-        driver_dict = {}
-
-        for driver_entry in data:
-            if driver_entry.get("session_key") in active_session_keys:
-                driver_acronym = driver_entry.get("name_acronym")
-                driver_full_name = driver_entry.get("full_name")
-                driver_number = str(driver_entry.get("driver_number"))
-
-                if driver_acronym and driver_full_name and driver_number not in driver_dict:
-                    driver_dict[driver_acronym] = {
-                        "full_name": driver_full_name,
-                        "driver_number": driver_number
-                    }
-
-        table = Table(title=f"\nCoureurs die in {year} hebben gereden:")
-        table.add_column("Naam", justify="center")
-        table.add_column("Afkorting", justify="center")
-        table.add_column("Nummer", justify="center")
-
-        for driver_acronym, values in sorted(driver_dict.items()):
-            table.add_row(values["full_name"], driver_acronym, values["driver_number"])
-
-        console = Console()
-        console.print(table)
-
-        return driver_dict
     else:
-        logging.error("API-fout bij driver data")
+        logging.error("API-fout bij race data: '%s %s'", response.status_code, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
