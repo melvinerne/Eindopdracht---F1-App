@@ -160,7 +160,6 @@ def show_main_menu(driver, active_drivers, race_data, year):
             keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "5":
             compare_drivers(driver, driver_full_name, race_data, year)
-            keep_on_going(driver, driver_full_name, active_drivers, race_data, year)
         case "6":
             show_saved_results()
             show_main_menu(driver, active_drivers, race_data, year)
