@@ -30,7 +30,6 @@ def main():
         if choice == "1":
             active_drivers, driver, race_data, year = initialize()
             show_main_menu(driver, active_drivers, race_data, year)
-            return active_drivers
         if choice == "2":
             show_saved_results()
         if choice == "0":
