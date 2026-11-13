@@ -10,11 +10,11 @@ def get_saved_files():
 
 def open_file(file_name):
     try:
-        text = (RESULTS_DIR / file_name).read_text(encoding="utf-8")
+        file_path = (RESULTS_DIR / file_name).read_text(encoding="utf-8")
         print(f"\nInhoud van {file_name}:\n")
-        print(f"{text}\n")
+        print(f"{file_path}\n")
     except:
-        logging.error("Bestand lezen mislukt")
+        logging.error("Bestand lezen mislukt: '%s'", file_name)
         print("Bestand kon niet worden geopend")
 
 def delete_file(file_name):
@@ -22,8 +22,32 @@ def delete_file(file_name):
         (RESULTS_DIR / file_name).unlink()
         print(f"{file_name} is verwijderd")
     except:
-        logging.error("Bestand verwijjderen mislukt")
+        logging.error("Bestand verwijjderen mislukt: '%s'", file_name)
         print("Bestand kon niet worden verwijderd")
+
+
+def add_note(file_name):
+    file_path = RESULTS_DIR / file_name
+
+    if not file_path.exists():
+        logging.error("Bestand niet gevonden: '%s'", file_path)
+        print("Bestand bestaat niet")
+        return
+
+    added_content = input(f"Welke notitie wil je aan {file_name} toevoegen? ").strip()
+    if not added_content:
+        print("Geen notitie ingevoerd, bestand is niet aangepast")
+        return
+
+    try:
+        with file_path.open("a", encoding="utf-8") as f:
+            f.write(f"\n\nNotitie:\n" + added_content)
+        print(f'{file_name} is aangepast, "{added_content}" is toegevoegd')
+        print(f"Dit is de inhoud van {file_name} nu:")
+    except Exception:
+        logging.error("Bestand aanpassen mislukt: '%s'", file_path)
+        print("Bestand kon niet worden aangepast")
+
 
 def show_saved_results():
     while True:
@@ -39,7 +63,7 @@ def show_saved_results():
         choice = input(f"Kies het nummer van het bestand die je wilt selecteren.\n"
                        f"Kies 0 om te stoppen. ").strip()
         while not choice.isdigit() or int(choice) > len(files):
-            logging.warning("Ongeldig bestandsnummer ingevoerd")
+            logging.warning("Ongeldig bestandsnummer ingevoerd: '%s'", choice)
             choice = input("Ongeldige invoer, probeer opnieuw").strip()
 
         choice = int(choice)
@@ -49,32 +73,36 @@ def show_saved_results():
 
         action = input(f"Welke actie wil je uitvoeren? \n"
                        f"1. Openen\n"
-                       f"2. Verwijderen\n"
-                       f"3. Ander bestand selecteren\n"
+                       f"2. Notitie toevoegen\n"
+                       f"3. Verwijderen\n"
+                       f"4. Ander bestand selecteren\n"
                        f"0. Stop\n"
                        f"Kies het nummer van je optie: ").strip()
-        while action not in ("1", "2", "3", "0"):
-            logging.warning("Ongeldige invoer bij openen/verwijderen")
-            action = input("Ongeldige invoer, kies 1 of 2 ").strip()
+        while action not in ("1", "2", "3", "4", "0"):
+            logging.warning("Ongeldige invoer bij openen/verwijderen: '%s'", action)
+            action = input("Ongeldige invoer, kies 1, 2, 3, 4 of 0 ").strip()
 
         if action == "1":
             open_file(file_name)
         if action == "2":
+            add_note(file_name)
+            open_file(file_name)
+        if action == "3":
             confirm = input(f"Weet je zeker dat je '{file_name}' wilt verwijderen? (Ja/Nee): ").capitalize().strip()
             while confirm not in ("Ja", "Nee"):
-                logging.warning("Ongeldige invoer bij verwijderen confirmatie")
+                logging.warning("Ongeldige invoer bij verwijderen confirmatie: '%s'", confirm)
                 confirm = input("Onjuiste invoer, kies Ja of Nee: ").capitalize().strip()
             if confirm == "Ja":
                 delete_file(file_name)
             else:
                 print("Verwijderen geannuleerd.")
-        if action == "3":
+        if action == "4":
             continue
         if action == "0":
             return
         keep_on_going = input("Wil je nog een actie doen met de opgeslagen resultaten? Ja/nee ").capitalize().strip()
         while keep_on_going not in ("Ja", "Nee"):
-            logging.warning("Ongeldige invoer bij saved results")
+            logging.warning("Ongeldige invoer bij saved results: '%s'", keep_on_going)
             keep_on_going = input("Ongeldige invoer, kies ja/nee ").capitalize().strip()
 
         if keep_on_going == "Nee":

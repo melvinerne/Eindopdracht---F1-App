@@ -13,29 +13,31 @@ def get_race_results(driver, race_data, active_drivers):
         driver_number = active_drivers[driver]['driver_number']
         params = {"driver_number": driver_number}
         try:
-            response = requests.get(f"{URL}/session_result", params=params)
+            response = requests.get(f"{URL}/session_result", params=params, timeout=10)
+
+            if response.ok:
+                    all_races = response.json()
+                    race_results_dict = {}
+
+                    for race in all_races:
+                            if race["session_key"] in race_data:
+                                    country = race_data[race["session_key"]]["country_name"]
+                                    location = race_data[race["session_key"]]["location"]
+                                    position = race["position"]
+                                    race_results_dict[race["session_key"]] = {
+                                            "Race name": country,
+                                            "Location": location,
+                                            "position": position
+                                    }
+                    return race_results_dict
+
         except requests.exceptions.RequestException as error:
-            logging.error(f"API-fout: {error}")
+            logging.error("Verbindingsfout bij race results voor driver: '%s'", error)
             print("De OpenF1 API is momenteel niet bereikbaar.")
             return None
 
-        if response.ok:
-                all_races = response.json()
-                race_results_dict = {}
-
-                for race in all_races:
-                        if race["session_key"] in race_data:
-                                country = race_data[race["session_key"]]["country_name"]
-                                location = race_data[race["session_key"]]["location"]
-                                position = race["position"]
-                                race_results_dict[race["session_key"]] = {
-                                        "Race name": country,
-                                        "Location": location,
-                                        "position": position
-                                }
-                return race_results_dict
         else:
-            logging.error("API-fout bij race results")
+            logging.error("API-fout bij race results: '%s %s'", response.status_code, response.text)
             print(f"Fout: {response.status_code} - {response.text}")
             return None
 
@@ -80,33 +82,34 @@ def calculate_fastest_lap(driver, race_data, active_drivers):
     params = {"driver_number": driver_number}
     try:
         response = requests.get(f"{URL}/laps", params=params)
+
+        if response.ok:
+            lap_data = response.json()
+            fastest_lap_per_session = {}
+
+            for lap in lap_data:
+                session_key = lap["session_key"]
+                lap_duration = lap["lap_duration"]
+
+                if session_key in race_data and lap_duration is not None:
+                    if session_key not in fastest_lap_per_session or lap_duration < fastest_lap_per_session[session_key]:
+                        fastest_lap_per_session[session_key] = lap_duration
+
+            fastest_lap = min(fastest_lap_per_session.values())
+            fastest_session_key = min(fastest_lap_per_session, key=fastest_lap_per_session.get)
+
+            country = race_data[fastest_session_key]["country_name"]
+            circuit = race_data[fastest_session_key]["location"]
+
+            return fastest_lap, country, circuit
+
     except requests.exceptions.RequestException as error:
-        logging.error(f"API-fout: {error}")
+        logging.error("Verbindingsfout bij race results voor fastest lap '%s'", error)
         print("De OpenF1 API is momenteel niet bereikbaar.")
         return None
 
-    if response.ok:
-        lap_data = response.json()
-        fastest_lap_per_session = {}
-
-        for lap in lap_data:
-            session_key = lap["session_key"]
-            lap_duration = lap["lap_duration"]
-
-            if session_key in race_data and lap_duration is not None:
-                if session_key not in fastest_lap_per_session or lap_duration < fastest_lap_per_session[session_key]:
-                    fastest_lap_per_session[session_key] = lap_duration
-
-        fastest_lap = min(fastest_lap_per_session.values())
-        fastest_session_key = min(fastest_lap_per_session, key=fastest_lap_per_session.get)
-
-        country = race_data[fastest_session_key]["country_name"]
-        circuit = race_data[fastest_session_key]["location"]
-
-        return fastest_lap, country, circuit
-
     else:
-        logging.error("API-fout bij fastest lap")
+        logging.error("API-fout bij race results: '%s %s'", response.status_code, response.text)
         print(f"Fout: {response.status_code} - {response.text}")
         return None
 
@@ -250,7 +253,7 @@ def save_files_as_table(function_name, requested_data, driver, year):
                 file.write(console.export_text())
                 print(f"Bestand is opgeslagen als {file_path}.")
         except OSError as error:
-            logging.error("Opslaan mislukt")
+            logging.error("Opslaan mislukt: '%s'", error)
             print("Fout bij het opslaan, probeer opnieuw")
 
 def save_files_as_txt(function_name, requested_data, driver, year):
@@ -271,5 +274,5 @@ def save_files_as_txt(function_name, requested_data, driver, year):
                 file.write(str(requested_data))
             print(f"Bestand is opgeslagen als {file_path}.")
         except OSError as error:
-            logging.error("Opslaan mislukt")
+            logging.error("Opslaan mislukt: '%s'", error)
             print("Fout bij het opslaan, probeer opnieuw")

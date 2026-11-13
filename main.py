@@ -24,7 +24,7 @@ def main():
               f"0. Stop")
         choice = input("Maak je keuze: ")
         while choice not in ("0", "1", "2"):
-            logging.warning("Ongeldige invoer bij initialisatie")
+            logging.warning("Ongeldige invoer bij initialisatie: '%s'", choice)
             choice = input("Ongeldige invoer, kies 1, 2 of 0 ").strip()
 
         if choice == "1":
@@ -39,8 +39,8 @@ def main():
 def initialize():
     year = input("Van welk jaar wil je statistieken bekijken? Je kan kiezen uit 2023 t/m 2025. ")
     while year not in ("2023", "2024", "2025"):
-        logging.warning("Ongeldig jaar ingevoerd")
-        year = input("Ongeldige invoer, ja kan keizen uit 2023 t/m 2025 ")
+        logging.warning("Ongeldig jaar ingevoerd: '%s'", year)
+        year = input("Ongeldige invoer, ja kan kiezen uit 2023 t/m 2025 ")
 
     race_data = get_race_data(year)
     active_drivers = get_drivers(race_data, year)
@@ -48,14 +48,14 @@ def initialize():
     driver = input(
         f"\nVan welke coureur wil je informatie bekijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver not in active_drivers:
-        logging.warning("Ongeldige coureur ingevoerd")
+        logging.warning("Ongeldige coureur ingevoerd: '%s'", driver)
         driver = input("Coureur niet gevonden, probeer opnieuw ").upper().strip()
     return active_drivers, driver, race_data, year
 
 def get_race_data(chosen_year):
     params = {'session_name': "Race", "year": chosen_year}
     try:
-        response = requests.get(f"{URL}/sessions",params=params)
+        response = requests.get(f"{URL}/sessions",params=params, timeout=10)
     except requests.exceptions.RequestException as error:
         logging.error(f"API-fout: {error}")
         print("De OpenF1 API is momenteel niet bereikbaar.")
@@ -136,7 +136,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
 
     menu_choice = input(f"Kies een optie: Kies uit 0 t/m 6 ")
     while menu_choice not in ("0", "1", "2", "3", "4", "5", "6"):
-        logging.warning("Ongeldige menukeuze ingevoerd")
+        logging.warning("Ongeldige menukeuze ingevoerd: '%s'", menu_choice)
         menu_choice = input(f"Ongeldige invoer. Kies 0 t/m 6. ")
 
     match menu_choice:
@@ -166,7 +166,7 @@ def show_main_menu(driver, active_drivers, race_data, year):
 def keep_on_going(driver, driver_full_name, active_drivers, race_data, year):
     choice = input(f"Wil je meer statistieken bekijken? Ja/nee ").capitalize().strip()
     while choice not in ("Ja", "Nee"):
-        logging.warning("Ongeldige invoer bij vraag om door te gaan ingevoerd")
+        logging.warning("Ongeldige invoer bij vraag om door te gaan ingevoerd: '%s'", choice)
         choice = input("Onjuiste invoer, kies ja/nee ").capitalize().strip()
     if choice == "Ja":
         second_choice = input(f"Je bekijkt nu statistieken van {driver_full_name} uit {year}. Wil je verder met dezelfde gegevens? Ja/nee ").capitalize().strip()
@@ -186,7 +186,7 @@ def compare_drivers(driver, driver_full_name, race_data, year):
 
     driver_to_compare = input(f"Met welke coureur wil je {driver_full_name} vergelijken? Gebruik de afkorting (bijvoorbeeld VER) ").upper().strip()
     while driver_to_compare == driver or driver_to_compare not in active_drivers:
-        logging.warning("Ongeldige coureur om te vergelijken ingevoerd")
+        logging.warning("Ongeldige coureur om te vergelijken ingevoerd: '%s'", driver_to_compare)
         driver_to_compare = input(f"{driver} is al geselecteerd of bestaat niet. Kies een andere coureur ").upper().strip()
 
     driver_to_compare_full_name =  active_drivers[driver_to_compare]["full_name"]
@@ -208,7 +208,7 @@ def compare_drivers(driver, driver_full_name, race_data, year):
 
     menu_choice = input("Kies een optie: Kies uit 0 t/m 4 ")
     while menu_choice not in ("0", "1", "2", "3", "4"):
-        logging.warning("Ongeldige menukeuze om te vergelijken ingevoerd")
+        logging.warning("Ongeldige menukeuze om te vergelijken ingevoerd: '%s'", menu_choice)
         menu_choice = input("Ongeldige invoer. Kies 0 t/m 4. ")
 
     match menu_choice:
